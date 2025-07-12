@@ -1,0 +1,67 @@
+services:
+  pterodactyl-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pterodactyl-mcp-server
+    restart: unless-stopped
+    
+    # Environment variables - use .env file or override here
+    environment:
+      - PTERODACTYL_PANEL_URL=${PTERODACTYL_PANEL_URL}
+      - PTERODACTYL_CLIENT_API_KEY=${PTERODACTYL_CLIENT_API_KEY}
+      - PTERODACTYL_APPLICATION_API_KEY=${PTERODACTYL_APPLICATION_API_KEY}
+      - PTERODACTYL_TIMEOUT=${PTERODACTYL_TIMEOUT:-30}
+      - PTERODACTYL_VERIFY_SSL=${PTERODACTYL_VERIFY_SSL:-true}
+    
+    # Optional: Expose ports if needed for HTTP transport
+    # ports:
+    #   - "8080:8080"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; assert os.getenv('PTERODACTYL_PANEL_URL')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: Add a reverse proxy if using HTTP transport
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: pterodactyl-mcp-proxy
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/ssl/certs:ro
+  #   depends_on:
+  #     - pterodactyl-mcp
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+
+networks:
+  default:
+    name: pterodactyl-mcp-network
